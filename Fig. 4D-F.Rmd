@@ -1,0 +1,310 @@
+---
+title: "Fig.4D-F & Fig. E4B-C"
+author: "Lisa Holsten"
+date: "10 Juni 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Packages
+```{r}
+library(clusterProfiler)
+library(dplyr)
+library(ggplot2)
+library(ggnetwork)
+```
+
+# Import data
+```{r}
+# Import info dataset
+info_dataset <- read.table("sample_info/info_Dataset_Wataru_mod.csv", header = TRUE, check.names = FALSE, 
+                           sep = ",", row.names = 1,stringsAsFactors = F)
+
+# Import count table filtered for chosen cut-off (part of CoCena script)
+filt_cutoff_counts <- readRDS(file = "CoCena_files/FilteredCountFile.rds")
+
+# Import network (part of CoCena)
+network_object <- readRDS(file = "CoCena_files/CoCena_NetworkObject.Rds")
+
+# Import node attributes of CoCena network (generated within CoCena script)
+node_attributes <- readRDS(file = "CoCena_files/NodeAttributes_CoCenaNetwork.rds")
+
+# Import hallmark file
+gmt_hallmark_entrez <- clusterProfiler::read.gmt("reference_files/h.all.v6.1.symbols.gmt")
+
+# Import function for network visualization (part of CoCena)
+source(paste0("scripts/network_visualization.R" ))
+```
+
+# Calculation of group means
+```{r}
+filt_cutoff_counts_t <- as.data.frame(t(filt_cutoff_counts))
+filt_cutoff_counts_t$group <- info_dataset[rownames(filt_cutoff_counts_t),"condition"]
+filt_cutoff_counts_t %>% group_by(group) %>% summarise_all(mean) -> group_means 
+
+group_means_df <- data.frame(t(group_means[,2:ncol(group_means)]),
+                             row.names = colnames(group_means[,2:ncol(group_means)]))
+colnames(group_means_df) <- group_means$group
+group_means_df$Gene <- rownames(group_means_df)
+```
+
+# List of genes of relevant clusters (> 35 and != white) & all network genes (universe):
+```{r}
+gene_list <- lapply(unique(node_attributes$cluster_color), function(x){
+  unique(node_attributes[node_attributes$cluster_color==x,"Gene"])
+})
+names(gene_list) <- unique(node_attributes$cluster_color)
+
+gene_list <- gene_list[lapply(gene_list,length)>=35]
+gene_list$white = NULL
+
+gene_list <-lapply(gene_list, function(x){
+  gene_conv <- clusterProfiler:: bitr(x, 
+                         fromType="SYMBOL", 
+                         toType="ENTREZID", 
+                         OrgDb="org.Hs.eg.db", 
+                         drop = T)
+  gene_conv$ENTREZID
+})
+
+universe_Entrez_network = clusterProfiler:: bitr(node_attributes$Gene, 
+                                                 fromType="SYMBOL", 
+                                                 toType="ENTREZID", 
+                                                 OrgDb="org.Hs.eg.db", 
+                                                 drop = T)
+```
+
+### compareCluster hallmark
+```{r}
+gmt_hallmark_entrez$ont <- stringr::str_replace(gmt_hallmark_entrez$ont, pattern="HALLMARK_", replacement = "")
+gmt_hallmark_entrez$ont <- stringr::str_replace_all(gmt_hallmark_entrez$ont, pattern="_", replacement = " ")
+
+
+colnames(gmt_hallmark_entrez) <- c("ont", "SYMBOL")
+
+hallmark_entrez <- clusterProfiler:: bitr(gmt_hallmark_entrez$SYMBOL,
+                                          fromType="SYMBOL",
+                                          toType="ENTREZID",
+                                          OrgDb="org.Hs.eg.db",
+                                          drop = T)
+
+gmt_hallmark_entrez <- dplyr::right_join(x = gmt_hallmark_entrez, y = hallmark_entrez, by = "SYMBOL")
+gmt_hallmark_entrez <- gmt_hallmark_entrez[, -2]
+
+ck_HALLMARK <- compareCluster(geneClusters = gene_list, fun = "enricher", pvalueCutoff = 1, qvalueCutoff = 1,
+                              TERM2GENE=gmt_hallmark_entrez, universe=universe_Entrez_network$ENTREZID)
+
+enrichplot::dotplot(ck_HALLMARK, showCategory = 5)
+```
+
+
+### Fig. 4D - Hallmark Cholesterol Homeostasis in GOLD2 modules
+```{r}
+ck_HALLMARK_df <- as.data.frame(ck_HALLMARK)
+
+# Get gene names
+genelist_cholesterol <- unlist(strsplit(x = ck_HALLMARK_df[ck_HALLMARK_df$Description == "CHOLESTEROL HOMEOSTASIS" & 
+                                                             ck_HALLMARK_df$Cluster %in% c("gold", "red", "maroon"), 
+                                                           "geneID"], 
+                                 split = "/"))
+genelist_cholesterol_symbol <- clusterProfiler:: bitr(genelist_cholesterol, 
+                                               fromType="ENTREZID", 
+                                               toType="SYMBOL", 
+                                               OrgDb="org.Hs.eg.db", 
+                                               drop = T)
+genelist_cholesterol_symbol <- genelist_cholesterol_symbol$SYMBOL
+
+# Network
+visualize_network(network = network_object,
+                  color.by = "cluster", 
+                  select.cluster = c("gold", "red", "maroon"),
+                  gene.label = genelist_cholesterol_symbol,
+                  save.pdf = F) 
+
+# Heatmap
+groupmeans_HM_Chol <- group_means_df[group_means_df$Gene %in% genelist_cholesterol_symbol, ]
+groupmeans_HM_Chol$Gene <- NULL
+groupmeans_HM_Chol <- as.matrix(groupmeans_HM_Chol)
+
+breakList <- seq(-1.5, 1.5, by = .1)
+pheatmap::pheatmap(mat = groupmeans_HM_Chol,
+                   scale = "row", 
+                   breaks = breakList,
+                   show_colnames = T,
+                   labels_col = c("Control", "GOLD 2", "GOLD 3/4"),
+                   cluster_rows = T, 
+                   cluster_cols = F,
+                   clustering_distance_rows = "euclidean",
+                   clustering_method = "complete",
+                   treeheight_row = 10,
+                   angle_col = 90,
+                   cellheight = 12,
+                   cellwidth = 12,
+                   color = colorRampPalette(rev(RColorBrewer::brewer.pal(n = 11, name = "RdBu")))(length(breakList)-1))
+
+```
+
+### Fig. 4E - Hallmark Interferon Alpha Response in GOLD3/4 modules
+```{r, fig.height=10}
+# Get gene names
+genelist_interferon_alpha <- unlist(strsplit(x = ck_HALLMARK_df[ck_HALLMARK_df$Description == "INTERFERON ALPHA RESPONSE" & 
+                                                             ck_HALLMARK_df$Cluster %in% c("lightgreen", "pink"), 
+                                                           "geneID"], 
+                                        split = "/"))
+genelist_interferon__alpha_symbol <- clusterProfiler:: bitr(genelist_interferon_alpha, 
+                                                      fromType="ENTREZID", 
+                                                      toType="SYMBOL", 
+                                                      OrgDb="org.Hs.eg.db", 
+                                                      drop = T)
+genelist_interferon_alpha_symbol <- genelist_interferon__alpha_symbol$SYMBOL
+
+# Network
+visualize_network(network = network_object,
+                  color.by = "cluster", 
+                  select.cluster = c("lightgreen", "pink"),
+                  gene.label = genelist_interferon_alpha_symbol,
+                  save.pdf = F) 
+
+# Heatmap
+groupmeans_HM_INFA <- group_means_df[group_means_df$Gene %in% genelist_interferon_alpha_symbol, ]
+groupmeans_HM_INFA$Gene <- NULL
+groupmeans_HM_INFA <- as.matrix(groupmeans_HM_INFA)
+
+breakList <- seq(-1.5, 1.5, by = .1)
+pheatmap::pheatmap(mat = groupmeans_HM_INFA,
+                   scale = "row", 
+                   breaks = breakList,
+                   show_colnames = T,
+                   labels_col = c("Control", "GOLD 2", "GOLD 3/4"),
+                   cluster_rows = T, 
+                   cluster_cols = F,
+                   clustering_distance_rows = "euclidean",
+                   clustering_method = "complete",
+                   treeheight_row = 10,
+                   angle_col = 90,
+                   cellheight = 12,
+                   cellwidth = 12,
+                   color = colorRampPalette(rev(RColorBrewer::brewer.pal(n = 11, name = "RdBu")))(length(breakList)-1))
+
+```
+
+
+### Fig. 4F - Hallmark G2M checkpoint in GOLD3/4 modules
+```{r, fig.height=8}
+# Get gene names
+genelist_G2M <- unlist(strsplit(x = ck_HALLMARK_df[ck_HALLMARK_df$Description == "G2M CHECKPOINT" & 
+                                                            ck_HALLMARK_df$Cluster %in% c("lightgreen", "pink"), 
+                                                          "geneID"], 
+                                       split = "/"))
+genelist_G2M_symbol <- clusterProfiler:: bitr(genelist_G2M, 
+                                                     fromType="ENTREZID", 
+                                                     toType="SYMBOL", 
+                                                     OrgDb="org.Hs.eg.db", 
+                                                     drop = T)
+genelist_G2M_symbol <- genelist_G2M_symbol$SYMBOL
+
+# Heatmap
+groupmeans_HM_G2M <- group_means_df[group_means_df$Gene %in% genelist_G2M_symbol, ]
+groupmeans_HM_G2M$Gene <- NULL
+groupmeans_HM_G2M <- as.matrix(groupmeans_HM_G2M)
+
+breakList <- seq(-1.5, 1.5, by = .1)
+pheatmap::pheatmap(mat = groupmeans_HM_G2M,
+                   scale = "row", 
+                   breaks = breakList,
+                   show_colnames = T,
+                   labels_col = c("Control", "GOLD 2", "GOLD 3/4"),
+                   cluster_rows = T, 
+                   cluster_cols = F,
+                   clustering_distance_rows = "euclidean",
+                   clustering_method = "complete",
+                   treeheight_row = 10,
+                   angle_col = 90,
+                   cellheight = 12,
+                   cellwidth = 12,
+                   color = colorRampPalette(rev(RColorBrewer::brewer.pal(n = 11, name = "RdBu")))(length(breakList)-1))
+```
+
+### Fig. E4B - HAllmark Interferon gamma response
+```{r, fig.height=11}
+# Get gene names
+genelist_IFNG <- unlist(strsplit(x = ck_HALLMARK_df[ck_HALLMARK_df$Description == "INTERFERON GAMMA RESPONSE" & 
+                                                            ck_HALLMARK_df$Cluster %in% c("lightgreen", "pink"), 
+                                                          "geneID"], 
+                                       split = "/"))
+genelist_IFNG_symbol <- clusterProfiler:: bitr(genelist_IFNG, 
+                                                     fromType="ENTREZID", 
+                                                     toType="SYMBOL", 
+                                                     OrgDb="org.Hs.eg.db", 
+                                                     drop = T)
+genelist_IFNG_symbol <- genelist_IFNG_symbol$SYMBOL
+
+# Heatmap
+groupmeans_HM_IFNG <- group_means_df[group_means_df$Gene %in% genelist_IFNG_symbol, ]
+groupmeans_HM_IFNG$Gene <- NULL
+groupmeans_HM_IFNG <- as.matrix(groupmeans_HM_IFNG)
+
+breakList <- seq(-1.5, 1.5, by = .1)
+pheatmap::pheatmap(mat = groupmeans_HM_IFNG,
+                   scale = "row", 
+                   breaks = breakList,
+                   show_colnames = T,
+                   labels_col = c("Control", "GOLD 2", "GOLD 3/4"),
+                   cluster_rows = T, 
+                   cluster_cols = F,
+                   clustering_distance_rows = "euclidean",
+                   clustering_method = "complete",
+                   treeheight_row = 10,
+                   angle_col = 90,
+                   cellheight = 12,
+                   cellwidth = 12,
+                   color = colorRampPalette(rev(RColorBrewer::brewer.pal(n = 11, name = "RdBu")))(length(breakList)-1))
+```
+
+
+### Fig. E4C - Hallmark Apical Junctions in control modules
+```{r, fig.height=10}
+#Get genes names
+genelist_apicaljunctions <- unlist(strsplit(x = ck_HALLMARK_df[ck_HALLMARK_df$Description == "APICAL JUNCTION" & 
+                                                                 ck_HALLMARK_df$Cluster %in% c("orchid", "blue", 
+                                                                                               "lightblue", "darkgrey",
+                                                                                               "darkorange", "darkgreen"), 
+                                                               "geneID"], split = "/"))
+genelist_apicaljunctions_symbol <- clusterProfiler:: bitr(genelist_apicaljunctions, 
+                                                     fromType="ENTREZID", 
+                                                     toType="SYMBOL", 
+                                                     OrgDb="org.Hs.eg.db", 
+                                                     drop = T)
+genelist_apicaljunctions_symbol <- genelist_apicaljunctions_symbol$SYMBOL
+
+# Network
+visualize_network(network = network_object,
+                  color.by = "cluster", 
+                  select.cluster = c("orchid", "blue", "lightblue", "darkgrey", "darkorange", "darkgreen"),
+                  gene.label = genelist_apicaljunctions_symbol,
+                  save.pdf = F) 
+
+# Heatmap
+groupmeans_HM_AJ <- group_means_df[group_means_df$Gene %in% genelist_apicaljunctions_symbol, ]
+groupmeans_HM_AJ$Gene <- NULL
+groupmeans_HM_AJ <- as.matrix(groupmeans_HM_AJ)
+
+breakList <- seq(-1.5, 1.5, by = .1)
+pheatmap::pheatmap(mat = groupmeans_HM_AJ,
+                   scale = "row", 
+                   breaks = breakList,
+                   show_colnames = T,
+                   labels_col = c("Control", "GOLD 2", "GOLD 3/4"),
+                   cluster_rows = T, 
+                   cluster_cols = F,
+                   clustering_distance_rows = "euclidean",
+                   clustering_method = "complete",
+                   treeheight_row = 10,
+                   angle_col = 90,
+                   cellheight = 12,
+                   cellwidth = 12,
+                   color = colorRampPalette(rev(RColorBrewer::brewer.pal(n = 11, name = "RdBu")))(length(breakList)-1))
+```

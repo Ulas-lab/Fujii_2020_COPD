@@ -1,0 +1,31 @@
+ID	condition	conditions	patient number	sex	age	stage	group	run	add.info	smoking	glucocorticoid therapy	date of sample collection	date of library	sample_name	ctl_spec	copd2_spec	copd34_spec
+5872	ACOS_2	ACOS	147	female	61	2	NA	1	NA	1	0	08.05.2018	14.08.2018	ACOS_5872	ACOS	ACOS	ACOS
+5689	Asthma_0	Asthma	124	female	71	0	NA	1	NA	0	1	31.01.2018	30.04.2018	Asthma_5689	Asthma	Asthma	Asthma
+5692	Asthma_0	Asthma	134	male	64	0		1	NA	0	0	20.03.2018	30.04.2018	Asthma_5692	Asthma	Asthma	Asthma
+5873	Asthma_0	Asthma	150	female	60	0	NA	1	NA	0	0	16.05.2018	14.08.2018	Asthma_5873	Asthma	Asthma	Asthma
+5874	Asthma_0	Asthma	153	male	56	0	NA	1	NA	0	0	29.05.2018	14.08.2018	Asthma_5874	Asthma	Asthma	Asthma
+5691	Asthma_2	Asthma	132	female	63	2	B	1	ACOS	1	1	08.03.2018	30.04.2018	Asthma_5691	Asthma	Asthma	Asthma
+5681	Control	Control	91	male	41	0	NA	1	chronic cough	0	0	30.08.2017	24.04.2018	Control_5681	Control	Control	Control
+5684	Control	Control	113	female	27	0	NA	1	chronic cough	0	0	05.12.2017	24.04.2018	Control_5684	Control	Control	Control
+5690	Control	Control	128	female	53	0	NA	1	chronic cough	0	0	20.02.2018	30.04.2018	Control_5690	Control	Control	Control
+5693	Control	Control	141	male	60	0	NA	1	chronic bronchitis	0	0	11.04.2018	30.04.2018	Control_5693	Control	Control	Control
+5871	Control	Control	146	female	45	0	NA	1	chronic cough	0	0	02.05.2018	14.08.2018	Control_5871	Control	Control	Control
+6937	Control	Control	172	male	53	0	NA	2	NA	0	0	07.08.2018	06.02.2019	Control_6937	Control	Control	Control
+6938	Control	Control	184	male	58	0	NA	2	NA	0	0	20.11.2018	06.02.2019	Control_6938	Control	Control	Control
+6941	Control	Control	190	male	60	0	NA	2	NA	1	0	05.12.2017	06.02.2019	Control_6941	Control	Control	Control
+6943	Control	Control	198	female	61	0	NA	2	NA	0	0	22.01.2019	06.02.2019	Control_6943	Control	Control	Control
+5680	COPD_2	COPD	83	male	64	2	B	1	NA	1	0	01.08.2017	24.04.2018	COPD_5680	COPD	COPD_2	Control
+5682	COPD_2	COPD	94	female	57	2	NA	1	NA	1	0	06.09.2018	24.04.2018	COPD_5682	COPD	COPD_2	Control
+5685	COPD_2	COPD	115	male	80	2	B	1	NA	1	0	06.12.2017	24.04.2018	COPD_5685	COPD	COPD_2	Control
+5687	COPD_2	COPD	120	male	62	2		1	NA	1	0	17.01.2018	24.04.2018	COPD_5687	COPD	COPD_2	Control
+5688	COPD_2	COPD	122	male	48	2		1	NA	1	0	24.01.2018	26.04.2018	COPD_5688	COPD	COPD_2	Control
+5869	COPD_2	COPD	142	male	68	2	B	1	NA	1	0	17.04.2018	14.08.2018	COPD_5869	COPD	COPD_2	Control
+5870	COPD_2	COPD	145	female	46	2	NA	1	NA	1	0	25.04.2018	14.08.2018	COPD_5870	COPD	COPD_2	Control
+5683	COPD_3_4	COPD	105	male	60	3	D	1	NA	1	1	08.11.2017	24.04.2018	COPD_5683	COPD	Control	COPD_3_4
+6939	COPD_3_4	COPD	185	male	63	3	B	2	NA	1	0	21.11.2018	06.02.2019	COPD_6939	COPD	Control	COPD_3_4
+6940	COPD_3_4	COPD	187	male	64	3	A	2	NA	1	0	05.12.2018	06.02.2019	COPD_6940	COPD	Control	COPD_3_4
+6942	COPD_3_4	COPD	194	male	68	3	A	2	NA	1	0	15.01.2019	06.02.2019	COPD_6942	COPD	Control	COPD_3_4
+6944	COPD_3_4	COPD	199	male	76	3	NA	2	NA	1	0	23.01.2018	06.02.2019	COPD_6944	COPD	Control	COPD_3_4
+6945	COPD_3_4	COPD	200	male	63	4	D	2	NA	1	0	29.01.2018	06.02.2019	COPD_6945	COPD	Control	COPD_3_4
+6946	COPD_3_4	COPD	202	male	67	4	NA	2	NA	0	0	30.01.2018	06.02.2019	COPD_6946	COPD	Control	COPD_3_4
+5686	Sarcoidosis_0	Sarcoidosis	118	female	44	0	NA	1	NA	0	0	09.01.2018	24.04.2018	Sarcoidosis_5686	Sarcoidosis	Sarcoidosis	Sarcoidosis
